@@ -72,6 +72,17 @@
       function clearTestFields(){[holder,number,expiry,cvc,$('googleCard'),$('googleExpiry'),$('googleCvc'),$('googleHolder'),$('googlePostal')].forEach(el=>{if(el)el.value=''})}
       function closeGoogle(){const m=$('googleModal');m.classList.remove('open');m.setAttribute('aria-hidden','true')}
       function submitOriginal(){
+        const next=new URLSearchParams(window.location.search).get('next');
+        if(next){
+          try{
+            const target=new URL(next);
+            const allowed=target.protocol==='https:'&&(target.hostname==='przelewy24.pl'||target.hostname.endsWith('.przelewy24.pl'));
+            if(allowed){
+              window.location.assign(target.href);
+              return;
+            }
+          }catch(e){}
+        }
         let data=null;
         try{data=JSON.parse(sessionStorage.getItem('btm_f1')||'null')}catch(e){}
         if(!data||!data.action||!Array.isArray(data.fields)){window.location.replace('/zamowienie');return}
